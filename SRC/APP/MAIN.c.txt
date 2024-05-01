@@ -5,7 +5,7 @@
 #define MAX_LENGTH 80
 #include <math.h>
 #define pi 3.141592654
-const double Earth_radius =6371000;
+const float Earth_radius =6371000.0;
 
 
 
@@ -13,28 +13,26 @@ void Delay(unsigned long counter);
 char UART1_Receiver(void);
 void UART5_Transmitter(unsigned char data);
 void printstring(char *str);
-void extract_lat_lon( const char *gprmc_sentence, float *latitude, float *longitude);
+void extract_lat_lon( char *gprmc_sentence, float *lati, float *longi);
 void printFloat_UART5(float number);
 void uart_init(void);
-float convertToFloat(const char* part);
 float GPS_calc_distance(float current_Lat,float current_Long,float previous_Lat,float previous_Long);
-float convert_to_Rad(float degree) ;
 float ToDegree(float val);
-float convertToFloat(const char* part);
+float convert_to_Rad(float degree);
 
-
-int main(void)
+int  main(void)
 {
 		char gprmc_sentence[] = "$GPRMC,123456.789,A,1234.5678,N,5678.1234,E,...";
 
-    float latitude, longitude;
+    float latitude=0.0, longitude=0.0;
+	  float current_latitude, current_longitude;
 	  float prev_latitude = 3014.190430;
 	  float prev_longitude = 3126.626221;
+	  float distance=0.0;
 
 
     int i = 0;
     char c;	
-	float x;
 	  uart_init();
     Delay(1); 
     printstring("Hello World \n");
@@ -54,24 +52,29 @@ int main(void)
             /* check if it's a GPRMC sentence */
 					    if (gprmc_sentence[0] == '$' && gprmc_sentence[1] == 'G' && gprmc_sentence[2] == 'P' &&
                   gprmc_sentence[3] == 'R' && gprmc_sentence[4] == 'M' && gprmc_sentence[5] == 'C') {
-               printstring(gprmc_sentence);
-							 UART5_Transmitter('\n');  
+               printstring(gprmc_sentence);  
                 /* Now you can use the latitude and longitude values as needed /              / send the character to UART5 */
                extract_lat_lon( gprmc_sentence, &latitude, &longitude);
-
+							 current_latitude  = latitude;
+							 current_longitude = longitude;
+               
 						 	 printstring("latitude\n");
 					   	 printFloat_UART5(latitude);
 						   UART5_Transmitter('\n');
 						   printstring("longitude\n");
 						   printFloat_UART5(longitude);
 						   UART5_Transmitter('\n');
+							 printstring("prev_latitude\n");
+						   printFloat_UART5(prev_latitude);
+						   UART5_Transmitter('\n');
+							 printstring("prev_longitude\n");
+						   printFloat_UART5(prev_longitude);
+						   UART5_Transmitter('\n');		
+							 distance=GPS_calc_distance(current_latitude,current_longitude,prev_latitude,prev_longitude);
+							 printstring("distance\n");
+						   printFloat_UART5(distance);
+					     UART5_Transmitter('\n');
 										
-							
-										x =GPS_calc_distance(latitude , longitude , prev_latitude , prev_longitude);
-              printf("%f \n",x);
-
-
-
 					 
 									}else {
         // Invalid GPRMC sentence
@@ -114,14 +117,33 @@ void Delay(unsigned long counter)
 
 
 
- void printFloat_UART5(float number) {
-	 char buffer[50];
-   char *r = buffer; 	 
-    sprintf(buffer, "%f", number); /* convert the float to a string */
+void printFloat_UART5(float number) {
+    char buffer[50];
+    char *r = buffer;
+    int integerPart, fractionalPart;
 
+    // Handle negative numbers
+    if (number < 0) {
+        UART5_Transmitter('-'); // Send the minus sign
+        number = -number; // Convert to positive for further processing
+    }
 
-    while(*r != '\0') {
-        UART5_Transmitter(*r); /* send each character of the string */
+    // Extract integer and fractional parts
+    integerPart = (int)number;
+    fractionalPart = (int)((number - integerPart) * 100000); // Assuming 5 decimal places
+
+    // Convert integer part to string
+    sprintf(buffer, "%d.", integerPart);
+    while (*r != '\0') {
+        UART5_Transmitter(*r);
+        r++;
+    }
+
+    // Convert fractional part to string (ensure 5 digits)
+    sprintf(buffer, "%05d", fractionalPart);
+    r = buffer;
+    while (*r != '\0') {
+        UART5_Transmitter(*r);
         r++;
     }
 }
@@ -164,65 +186,12 @@ void uart_init(void){
 
 		
 		
-void SystemInit(void)
-{
-    __disable_irq();    /* disable all IRQs */
-    
-    /* Grant coprocessor access */
-    /* This is required since TM4C123G has a floating point coprocessor */
-    SCB->CPACR |= 0x00F00000;
-}
-
-float convertToFloat(const char* part) {
-    float f;
-    sscanf(part, "%f", &f);
-    return f;
-}
-void extract_lat_lon(const char *gprmc_sentence, float *latitude, float *longitude) {
-    // Check if the sentence starts with "$GPRMC" and has at least 8 parts
-
-//char gprmc_sentence[] = "$GPRMC,123456.789,A,1234.5678,N,5678.1234,E,...";
-        // Find the comma positions
 
 
 
-	 
-    char* rest = (char*)gprmc_sentence;
-    char* comma1=( strtok_r(rest, ",", &rest));
-    char* comma2=( strtok_r(rest, ",", &rest));
-    char* comma3=( strtok_r(rest, ",", &rest));
-    char* comma4=(strtok_r(rest, ",", &rest));
-	  char* comma5=( strtok_r(rest, ",", &rest));
-	  char* comma6=( strtok_r(rest, ",", &rest));
-	  char* comma7=( strtok_r(rest, ",", &rest));
 
 
-        if (comma1 && comma2 && comma3 && comma4 &&comma5&&comma6&&comma7 ) {
-            // Extract latitude and longitude
-            float lat_deg = convertToFloat(comma4 );
-            char lat_dir = *(comma5 );
-            float lon_deg = convertToFloat(comma6 );
-            char lon_dir = *(comma7 );
 
-            // Set latitude and longitude directly
-            *latitude = lat_deg;
-            
-            if (lat_dir == 'S' || lat_dir == 's') {
-                *latitude *= -1;
-            }
-
-            *longitude = lon_deg;
-            
-
-            if (lon_dir == 'W' || lon_dir == 'w') {
-                *longitude *= -1;
-            }
-        } else {
-            // Invalid GRMC sentence
-            *latitude = 0;
-            *longitude = 0;
-        }
-    }
 
 
 //*function to convert GPS values to degree*//
@@ -254,3 +223,42 @@ float GPS_calc_distance(float current_Lat,float current_Long,float previous_Lat,
     return Earth_radius*c;   //in meters
 }
 
+void extract_lat_lon(char *gprmc_sentence, float *latitude, float *longitude) {
+    // Check if the sentence starts with "$GPRMC" and has at least 8 parts
+    char *comma1 = strchr(gprmc_sentence, ',');
+    char *comma2 = strchr(comma1 + 1, ',');
+    char *comma3 = strchr(comma2 + 1, ',');
+    char *comma4 = strchr(comma3 + 1, ',');
+    char *comma5 = strchr(comma4 + 1, ',');
+    char *comma6 = strchr(comma5 + 1, ',');
+    char lat_dir;
+    char lon_dir;
+
+    if (comma1 && comma2 && comma3 && comma4 && comma5 && comma6) {
+        // Extract latitude and longitude
+        char lat_deg_str[10];
+        char lon_deg_str[10];
+
+        // Copy the substrings into null-terminated buffers
+        strncpy(lat_deg_str, comma3 + 1, comma4 - comma3 );
+        lat_deg_str[comma4 - comma3 - 1] = '\0';  // Null-terminate the string
+        strncpy(lon_deg_str, comma5 + 1, comma6 - comma5 );
+        lon_deg_str[comma6 - comma5 - 1] = '\0';  // Null-terminate the string
+
+        // Convert to floating-point values
+        *latitude = atof(lat_deg_str);
+        *longitude = atof(lon_deg_str);
+
+        // Adjust for South or West direction if needed
+        if (lat_dir == 'S' || lat_dir == 's') {
+            *latitude *= -1;
+        }
+        if (lon_dir == 'W' || lon_dir == 'w') {
+            *longitude *= -1;
+        }
+    } else {
+        // Invalid GPRMC sentence
+        *latitude = 0.0f;
+        *longitude = 0.0f;
+    }
+}
