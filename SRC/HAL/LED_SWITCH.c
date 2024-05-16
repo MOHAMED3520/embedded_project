@@ -1,7 +1,7 @@
 #include "../../SERVICES/tm4c123.h"
 #include "../../SERVICES/Bit_Operations.h"
 #include "../../HEADERS/HAL/LED_SWITCHES.h"
-//**** shehab eldeen khaled 2100422***//
+
 
 //**Get_switches_data**//
 unsigned char read_switch_data(unsigned char sw){
