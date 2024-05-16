@@ -27,4 +27,4 @@
 - SERVICES : Contain Bit_Operations which contain some Sets, Gets and clears + header file of tiva which contains registers adrresses + Startup code  
 
 ## Video Link:
-- video link will be available on second milestone
+- https://drive.google.com/drive/folders/1sWtfXL9iE0wN74YOkhtSlasSGLfTBbVK
