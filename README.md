@@ -15,10 +15,12 @@
 - GPS Module.
 - A personal computer (PC)
 - Connecting cables (USB, serial, etc.)
+- Display source (LCD, Seven segment, esp module wifi, etc)
 
 ## Algorithm :
 - Getting the current location coordinates from GPS Module using UART, then calculating the distance between it and destination point which is hard coded inside the code.
 - the distance is calculated using Haversine formula.
+- We use ESP module Wifi to display the covered distance on the smart phone.
 - When the destination point is arrived , the LED turns ON.
 
 ## Repo Folders:
